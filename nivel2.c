@@ -1,10 +1,3 @@
-
-
-
-//hay que añadir lo de la semana 2 aquí
-
-
-
 #define _POSIX_C_SOURCE 200112L
 
 #include <stdio.h>
@@ -14,7 +7,10 @@
 
 #define COMMAND_LINE_SIZE 1024
 #define ARGS_SIZE 64
-#define DEBUGN1 1
+
+// Control de depuracion (Desactivado N1, Activado N2)
+#define DEBUGN1 0
+#define DEBUGN2 1
 
 // Colores 
 #define RESET "\033[0m"
@@ -56,15 +52,14 @@ int main() {
 }
 
 char *read_line(char *line) {
-     
     printf("%c ", '$'); // Imprimir el prompt
-    fflush(stdout); // vaciar buffer
+    fflush(stdout);     // Vaciar buffer
 
-    // Leer línea desde teclado
+    // Leer linea desde teclado
     char *ptr = fgets(line, COMMAND_LINE_SIZE, stdin);
 
     if (ptr != NULL) {
-        // Sustituir el salto de línea '\n' por final de cadena '\0'
+        // Sustituir el salto de linea '\n' por final de cadena '\0'
         char *pos = strchr(line, '\n');
         if (pos != NULL) {
             *pos = '\0';
@@ -81,7 +76,7 @@ char *read_line(char *line) {
 int execute_line(char *line) {
     char *args[ARGS_SIZE];
     
-    // Trocear la línea en tokens
+    // Trocear la linea en tokens
     int num_tokens = parse_args(args, line);
 
     // Si hay tokens, comprobar si es comando interno
@@ -97,7 +92,7 @@ int parse_args(char **args, char *line) {
     char *token = strtok(line, " \t\n\r");
 
     while (token != NULL && num_tokens < ARGS_SIZE - 1) {
-        // Tratar comentarios: si empieza por '#', ignorar resto de la línea
+        // Tratar comentarios: si empieza por '#', ignorar resto de la linea
         if (token[0] == '#') {
             break;
         }
@@ -112,7 +107,7 @@ int parse_args(char **args, char *line) {
         token = strtok(NULL, " \t\n\r");
     }
 
-    // El último argumento siempre debe terminar en NULL
+    // El ultimo argumento siempre debe terminar en NULL
     args[num_tokens] = NULL;
 
     #if DEBUGN1
@@ -138,43 +133,132 @@ int check_internal(char **args) {
 }
 
 int internal_cd(char **args) {
-    #if DEBUGN1
-    fprintf(stderr, GRIS "[internal_cd()→ Esta función cambiará de directorio]\n" RESET);
-    #endif
+    char cwd[COMMAND_LINE_SIZE];
+    char target_dir[COMMAND_LINE_SIZE] = "";
+
+    // Determinar el directorio destino
+    if (args[1] == NULL) {
+        // Caso sin argumentos (HOME)
+        char *home = getenv("HOME");
+        if (home == NULL) {
+            fprintf(stderr, ROJO "Error: La variable HOME no esta definida\n" RESET);
+            return -1;
+        }
+        strcpy(target_dir, home);
+    } else {
+        // Caso con 1 o mas argumentos 
+        for (int i = 1; args[i] != NULL; i++) {
+            if (i > 1) {
+                strcat(target_dir, " ");
+            }
+            strcat(target_dir, args[i]);
+        }
+
+        // Eliminar comillas simples, dobles y el caracter escape (\) del directorio destino
+        char clean_dir[COMMAND_LINE_SIZE];
+        int j = 0;
+        for (int i = 0; target_dir[i] != '\0'; i++) {
+            if (target_dir[i] != '\'' && target_dir[i] != '"' && target_dir[i] != '\\') {
+                clean_dir[j++] = target_dir[i];
+            }
+        }
+        clean_dir[j] = '\0';
+        strcpy(target_dir, clean_dir);
+    }
+
+    // Cambiar de directorio
+    if (chdir(target_dir) != 0) {
+        perror(ROJO "chdir() error" RESET);
+        return -1;
+    }
+
+    // Imprimir el nuevo directorio 
+    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+        #if DEBUGN2
+        fprintf(stderr, GRIS "[internal_cd()- PWD: %s]\n" RESET, cwd);
+        #endif
+    } else {
+        perror(ROJO "getcwd() error" RESET);
+    }
+
     return 1;
 }
 
 int internal_export(char **args) {
-    #if DEBUGN1
-    fprintf(stderr, GRIS "[internal_export()→ Esta función asignará valores a variables de entorno]\n" RESET);
+    // Control de sintaxis inicial
+    if (args[1] == NULL) {
+        fprintf(stderr, ROJO "Error de sintaxis. Uso: export Nombre=Valor\n" RESET);
+        return -1;
+    }
+
+    // Buscar el simbolo '='
+    char *pos_igual = strchr(args[1], '=');
+    if (pos_igual == NULL) {
+        #if DEBUGN2
+        fprintf(stderr, GRIS "[internal_export() nombre: %s]\n" RESET, args[1]);
+        fprintf(stderr, GRIS "[internal_export()- valor: (null)]\n" RESET);
+        #endif
+        fprintf(stderr, ROJO "Error de sintaxis. Uso: export Nombre=Valor\n" RESET);
+        return -1;
+    }
+
+    // Separar NOMBRE y VALOR
+    *pos_igual = '\0';
+    char *nombre = args[1];
+    char *valor = pos_igual + 1;
+
+    #if DEBUGN2
+    fprintf(stderr, GRIS "[internal_export() nombre: %s]\n" RESET, nombre);
+    fprintf(stderr, GRIS "[internal_export()- valor: %s]\n" RESET, valor);
     #endif
+
+    // Obtener valor antiguo
+    char *old_val = getenv(nombre);
+    #if DEBUGN2
+    fprintf(stderr, GRIS "[internal_export() antiguo valor para %s: %s]\n" RESET, 
+            nombre, old_val ? old_val : "(null)");
+    #endif
+
+    // Asignar nuevo valor con setenv()
+    if (setenv(nombre, valor, 1) != 0) {
+        perror(ROJO "setenv() error" RESET);
+        return -1;
+    }
+
+    // Obtener y mostrar el nuevo valor
+    char *new_val = getenv(nombre);
+    #if DEBUGN2
+    fprintf(stderr, GRIS "[internal_export()- nuevo valor para %s: %s]\n" RESET, 
+            nombre, new_val ? new_val : "(null)");
+    #endif
+
     return 1;
 }
 
 int internal_source(char **args) {
     #if DEBUGN1
-    fprintf(stderr, GRIS "[internal_source()→ Esta función ejecutará un fichero de líneas de comandos]\n" RESET);
+    fprintf(stderr, GRIS "[internal_source()→ Esta funcion ejecutara un fichero de lineas de comandos]\n" RESET);
     #endif
     return 1;
 }
 
 int internal_jobs() {
     #if DEBUGN1
-    fprintf(stderr, GRIS "[internal_jobs()→ Esta función mostrará el PID de los procesos que no estén en foreground]\n" RESET);
+    fprintf(stderr, GRIS "[internal_jobs()→ Esta funcion mostrara el PID de los procesos que no esten en foreground]\n" RESET);
     #endif
     return 1;
 }
 
 int internal_fg(char **args) {
     #if DEBUGN1
-    fprintf(stderr, GRIS "[internal_fg()→ Esta función pondrá un trabajo en foreground]\n" RESET);
+    fprintf(stderr, GRIS "[internal_fg()→ Esta funcion pondra un trabajo en foreground]\n" RESET);
     #endif
     return 1;
 }
 
 int internal_bg(char **args) {
     #if DEBUGN1
-    fprintf(stderr, GRIS "[internal_bg()→ Esta función pondrá un trabajo en background]\n" RESET);
+    fprintf(stderr, GRIS "[internal_bg()→ Esta funcion pondra un trabajo en background]\n" RESET);
     #endif
     return 1;
-} 
+}
