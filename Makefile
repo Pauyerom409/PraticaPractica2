@@ -17,11 +17,11 @@ all: $(OBJS) $(PROGRAMS)
 nivel1: nivel1.o
 	$(CC) $@.o -o $@ $(LIBRARIES)
 
-#nivel2: nivel2.o
-#	$(CC) $@.o -o $@ $(LIBRARIES)
+nivel2: nivel2.o
+	$(CC) $@.o -o $@ $(LIBRARIES)
 
-#nivel3: nivel3.o
-#	$(CC) $@.o -o $@ $(LIBRARIES)
+nivel3: nivel3.o
+	$(CC) $@.o -o $@ $(LIBRARIES)
 	
 #nivel4: nivel4.o
 #	$(CC) $@.o -o $@ $(LIBRARIES)
