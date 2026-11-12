@@ -137,8 +137,8 @@ int internal_cd(char **args) {
     char target_dir[COMMAND_LINE_SIZE] = "";
 
     // Determinar el directorio destino
-    if (args[1] == NULL) {
-        // Caso sin argumentos (HOME)
+    
+    if (args[1] == NULL) {  // Caso sin argumentos (HOME)
         char *home = getenv("HOME");
         if (home == NULL) {
             fprintf(stderr, ROJO "Error: La variable HOME no esta definida\n" RESET);
@@ -146,15 +146,14 @@ int internal_cd(char **args) {
         }
         strcpy(target_dir, home);
     } else {
-        // Caso con 1 o mas argumentos 
-        for (int i = 1; args[i] != NULL; i++) {
+        for (int i = 1; args[i] != NULL; i++) { // Caso con 1 o mas argumentos 
             if (i > 1) {
                 strcat(target_dir, " ");
             }
             strcat(target_dir, args[i]);
         }
 
-        // Eliminar comillas simples, dobles y el caracter escape (\) del directorio destino
+        // Limpiar el directorio
         char clean_dir[COMMAND_LINE_SIZE];
         int j = 0;
         for (int i = 0; target_dir[i] != '\0'; i++) {
@@ -202,7 +201,7 @@ int internal_export(char **args) {
         return -1;
     }
 
-    // Separar NOMBRE y VALOR
+    // Separar nombre y valor
     *pos_igual = '\0';
     char *nombre = args[1];
     char *valor = pos_igual + 1;
