@@ -100,7 +100,7 @@ int parse_args(char **args, char *line) {
         args[num_tokens] = token;
 
         #if DEBUGN1
-        fprintf(stderr, GRIS "[parse_args()→ token %d: %s]\n" RESET, num_tokens, args[num_tokens]);
+        fprintf(stderr, GRIS "[parse_args() token %d: %s]\n" RESET, num_tokens, args[num_tokens]);
         #endif
 
         num_tokens++;
@@ -111,7 +111,7 @@ int parse_args(char **args, char *line) {
     args[num_tokens] = NULL;
 
     #if DEBUGN1
-    fprintf(stderr, GRIS "[parse_args()→ token %d: (null)]\n" RESET, num_tokens);
+    fprintf(stderr, GRIS "[parse_args() token %d: (null)]\n" RESET, num_tokens);
     #endif
 
     return num_tokens;
@@ -174,7 +174,7 @@ int internal_cd(char **args) {
     // Imprimir el nuevo directorio 
     if (getcwd(cwd, sizeof(cwd)) != NULL) {
         #if DEBUGN2
-        fprintf(stderr, GRIS "[internal_cd()- PWD: %s]\n" RESET, cwd);
+        fprintf(stderr, GRIS "[internal_cd() PWD: %s]\n" RESET, cwd);
         #endif
     } else {
         perror(ROJO "getcwd() error" RESET);
@@ -184,7 +184,7 @@ int internal_cd(char **args) {
 }
 
 int internal_export(char **args) {
-    // Control de sintaxis inicial
+    // Control inicial
     if (args[1] == NULL) {
         fprintf(stderr, ROJO "Error de sintaxis. Uso: export Nombre=Valor\n" RESET);
         return -1;
@@ -195,7 +195,7 @@ int internal_export(char **args) {
     if (pos_igual == NULL) {
         #if DEBUGN2
         fprintf(stderr, GRIS "[internal_export() nombre: %s]\n" RESET, args[1]);
-        fprintf(stderr, GRIS "[internal_export()- valor: (null)]\n" RESET);
+        fprintf(stderr, GRIS "[internal_export() valor: (null)]\n" RESET);
         #endif
         fprintf(stderr, ROJO "Error de sintaxis. Uso: export Nombre=Valor\n" RESET);
         return -1;
@@ -208,7 +208,7 @@ int internal_export(char **args) {
 
     #if DEBUGN2
     fprintf(stderr, GRIS "[internal_export() nombre: %s]\n" RESET, nombre);
-    fprintf(stderr, GRIS "[internal_export()- valor: %s]\n" RESET, valor);
+    fprintf(stderr, GRIS "[internal_export() valor: %s]\n" RESET, valor);
     #endif
 
     // Obtener valor antiguo
@@ -218,7 +218,7 @@ int internal_export(char **args) {
             nombre, old_val ? old_val : "(null)");
     #endif
 
-    // Asignar nuevo valor con setenv()
+    // Asignar nuevo valor
     if (setenv(nombre, valor, 1) != 0) {
         perror(ROJO "setenv() error" RESET);
         return -1;
@@ -227,7 +227,7 @@ int internal_export(char **args) {
     // Obtener y mostrar el nuevo valor
     char *new_val = getenv(nombre);
     #if DEBUGN2
-    fprintf(stderr, GRIS "[internal_export()- nuevo valor para %s: %s]\n" RESET, 
+    fprintf(stderr, GRIS "[internal_export() nuevo valor para %s: %s]\n" RESET, 
             nombre, new_val ? new_val : "(null)");
     #endif
 
@@ -236,28 +236,28 @@ int internal_export(char **args) {
 
 int internal_source(char **args) {
     #if DEBUGN1
-    fprintf(stderr, GRIS "[internal_source()→ Esta funcion ejecutara un fichero de lineas de comandos]\n" RESET);
+    fprintf(stderr, GRIS "[internal_source() Esta funcion ejecutara un fichero de lineas de comandos]\n" RESET);
     #endif
     return 1;
 }
 
 int internal_jobs() {
     #if DEBUGN1
-    fprintf(stderr, GRIS "[internal_jobs()→ Esta funcion mostrara el PID de los procesos que no esten en foreground]\n" RESET);
+    fprintf(stderr, GRIS "[internal_jobs() Esta funcion mostrara el PID de los procesos que no esten en foreground]\n" RESET);
     #endif
     return 1;
 }
 
 int internal_fg(char **args) {
     #if DEBUGN1
-    fprintf(stderr, GRIS "[internal_fg()→ Esta funcion pondra un trabajo en foreground]\n" RESET);
+    fprintf(stderr, GRIS "[internal_fg() Esta funcion pondra un trabajo en foreground]\n" RESET);
     #endif
     return 1;
 }
 
 int internal_bg(char **args) {
     #if DEBUGN1
-    fprintf(stderr, GRIS "[internal_bg()→ Esta funcion pondra un trabajo en background]\n" RESET);
+    fprintf(stderr, GRIS "[internal_bg() Esta funcion pondra un trabajo en background]\n" RESET);
     #endif
     return 1;
 }
